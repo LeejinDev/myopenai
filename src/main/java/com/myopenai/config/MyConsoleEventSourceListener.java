@@ -1,6 +1,7 @@
 package com.myopenai.config;
 
 import com.alibaba.fastjson.JSONObject;
+import com.unfbx.chatgpt.entity.chat.ChatCompletionResponse;
 import com.unfbx.chatgpt.sse.ConsoleEventSourceListener;
 import okhttp3.sse.EventSource;
 
@@ -32,9 +33,11 @@ public class MyConsoleEventSourceListener extends ConsoleEventSourceListener {
 
         if (!data.equals("[DONE]")) {
             JSONObject jsonObject = JSONObject.parseObject(data);
-//            String str = jsonObject.getJSONObject("choices").getString("text");
-            String str = jsonObject.getJSONObject("choices").getJSONObject("delta").getString("content");
-            result.append(str);
+            JSONObject delta = jsonObject.getJSONObject("choices").getJSONObject("delta");
+            if (delta != null) {
+                String str = delta.getString("content");
+                result.append(str);
+            }
         } else {
             countDownLatch.countDown();
         }

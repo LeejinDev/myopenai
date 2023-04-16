@@ -15,18 +15,17 @@
  */
 package com.myopenai.service;
 
+import com.myopenai.bean.dto.OpenAiRequest;
+import com.myopenai.bean.dto.OpenAiResult;
+import com.myopenai.websocket.WebSocketServer;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.ChatCompletion;
+import com.unfbx.chatgpt.entity.chat.ChatCompletionResponse;
 import com.unfbx.chatgpt.entity.chat.Message;
 import com.unfbx.chatgpt.entity.completions.Completion;
-import com.unfbx.chatgpt.entity.completions.CompletionResponse;
 import com.unfbx.chatgpt.entity.images.ImageResponse;
 import com.unfbx.chatgpt.entity.images.Item;
-import com.myopenai.bean.dto.OpenAiRequest;
-import com.myopenai.bean.dto.OpenAiResult;
-import com.myopenai.config.MyConsoleEventSourceListener;
-import com.myopenai.websocket.WebSocketServer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +34,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 /**
@@ -92,33 +90,10 @@ public class OpenAiService {
      */
     private void textQuiz(OpenAiRequest openAiRequest, WebSocketServer webSocketServer) throws Exception {
         String question = openAiRequest.getText();
-        if (openAiRequest.getModel() == 1){
-            // 传入上下文
-            if (openAiRequest.getKeep() == 1){
-                String prompt = completion.getPrompt();
-                completion.setPrompt(prompt + "\n" + question + "\n");
-            } else {
-                completion.setPrompt(question);
-            }
-            CompletionResponse completions = openAiClient.completions(completion);
-            String text = completions.getChoices()[0].getText();
-            webSocketServer.sendMessage(text);
-        } else {
-            CountDownLatch countDownLatch = new CountDownLatch(1);
-            MyConsoleEventSourceListener eventSourceListener = new MyConsoleEventSourceListener(countDownLatch);
-            if (openAiRequest.getKeep() == 1){
-                chatCompletion.getMessages().add(Message.builder().role(Message.Role.USER).content(question).build());
-            }else {
-                chatCompletion.setMessages(Arrays.asList(Message.builder().role(Message.Role.USER).content(question).build()));
-            }
-            openAiStreamClient.streamChatCompletion(chatCompletion, eventSourceListener);
-            try {
-                countDownLatch.await();
-                webSocketServer.sendMessage(eventSourceListener.getResult());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        chatCompletion.setMessages(Arrays.asList(Message.builder().role(Message.Role.USER).content(question).build()));
+        ChatCompletionResponse chatCompletionResponse = openAiClient.chatCompletion(chatCompletion);
+        String content = chatCompletionResponse.getChoices().get(0).getMessage().getContent();
+        webSocketServer.sendMessage(content);
     }
 
     /**
@@ -129,10 +104,7 @@ public class OpenAiService {
      */
     private void imageQuiz(OpenAiRequest openAiRequest, WebSocketServer webSocketServer) throws IOException {
         String question = openAiRequest.getText();
-        // 传入上下文
-        String prompt = completion.getPrompt();
-        completion.setPrompt(prompt + "\n" + question + "\n");
-        ImageResponse imageResponse = openAiClient.genImages("睡着的小朋友");
+        ImageResponse imageResponse = openAiClient.genImages(question);
         List<Item> data = imageResponse.getData();
         String join = String.join("\n", data.stream().map(Item::getUrl).collect(Collectors.toList()));
         webSocketServer.sendMessage(join);

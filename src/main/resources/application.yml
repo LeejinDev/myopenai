@@ -21,7 +21,7 @@ openai:
   # 默认的AI模型，gpt-3.5-turbo or gpt-3.5-turbo-0301	，区别：https://platform.openai.com/docs/models/gpt-3-5
   model: gpt-3.5-turbo
   # 多个Key用,分割
-  keys: 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
+  keys: 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
   # 综合问答API
   openai_api: https://api.openai.com/v1/chat/completions
   # 图片问答API

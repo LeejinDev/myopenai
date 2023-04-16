@@ -109,10 +109,8 @@ public class OpenAiConfig {
         return ChatCompletion
                 .builder()
                 .model(ChatCompletion.Model.GPT_3_5_TURBO.getName())
-                .temperature(0.2)
                 .maxTokens(4000)
                 .messages(messages)
-                .stream(true)
                 .build();
     }
 
